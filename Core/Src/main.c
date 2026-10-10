@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -26,6 +27,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <stdint.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,12 +54,20 @@ char uart_buf[64];
 
 volatile uint8_t key_event = 0;
 uint32_t last_key_time = 0;
+
+#define AHT20_ADDR       (0x38 << 1)
+
+uint8_t aht20_data[7];
+float temperature;
+float humidity;
+uint8_t aht20_status;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+uint8_t AHT20_Init(void);
+uint8_t AHT20_Read(float *temp, float *humi);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -98,6 +108,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   
   HAL_TIM_Base_Start_IT(&htim2);
@@ -108,6 +119,23 @@ int main(void)
   float voltage;
   char uart_buf[64];
   int len;
+
+  if (AHT20_Init())
+{
+    const char msg[] = "AHT20 Init OK\r\n";
+    HAL_UART_Transmit(&huart1,
+                      (uint8_t *)msg,
+                      sizeof(msg) - 1,
+                      100);
+}
+else
+{
+    const char msg[] = "AHT20 Init FAIL\r\n";
+    HAL_UART_Transmit(&huart1,
+                      (uint8_t *)msg,
+                      sizeof(msg) - 1,
+                      100);
+}
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -117,27 +145,47 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_ADC_Start(&hadc1);
-
-    if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
+    if (AHT20_Read(&temperature, &humidity))
     {
-        adc_value = HAL_ADC_GetValue(&hadc1);
+        int32_t t100 = (int32_t)(temperature * 100.0f);
+        uint32_t h100 = (uint32_t)(humidity * 100.0f);
 
-        voltage = adc_value * 3.3f / 4095.0f;
+        uint32_t t_abs = (t100 < 0) ?
+                        (uint32_t)(-t100) : (uint32_t)t100;
 
-        len = snprintf(uart_buf,
-                        sizeof(uart_buf),
-                        "ADC=%lu, Voltage=%.3f V\r\n",
-                        (unsigned long)adc_value,
-                        voltage);
+        char uart_buf[80];
 
+        int len = snprintf(
+            uart_buf,
+            sizeof(uart_buf),
+            "Temp=%s%lu.%02lu C, RH=%lu.%02lu%%\r\n",
+            (t100 < 0) ? "-" : "",
+            (unsigned long)(t_abs / 100),
+            (unsigned long)(t_abs % 100),
+            (unsigned long)(h100 / 100),
+            (unsigned long)(h100 % 100)
+        );
+
+        if (len > 0 && len < (int)sizeof(uart_buf))
+        {
+            HAL_UART_Transmit(
+                &huart1,
+                (uint8_t *)uart_buf,
+                (uint16_t)len,
+                100
+            );
+        }
+    }
+    else
+    {
+        const char msg[] = "AHT20 Read FAIL\r\n";
         HAL_UART_Transmit(&huart1,
-                          (uint8_t *)uart_buf,
-                          len,
+                          (uint8_t *)msg,
+                          sizeof(msg) - 1,
                           100);
     }
-    HAL_ADC_Stop(&hadc1);
-    HAL_Delay(500);
+
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -204,6 +252,79 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
         key_event = 1;
     }
+}
+
+uint8_t AHT20_Init(void)
+{
+    uint8_t status;
+    uint8_t cmd[3] = {0xBE, 0x08, 0x00};
+
+    HAL_Delay(40);
+
+    /* ????? */
+    if (HAL_I2C_Master_Receive(
+            &hi2c1, AHT20_ADDR, &status, 1, 100) != HAL_OK)
+    {
+        return 0;
+    }
+
+    /* Bit3 ? 0 ????????? */
+    if ((status & 0x08) == 0)
+    {
+        if (HAL_I2C_Master_Transmit(
+                &hi2c1, AHT20_ADDR, cmd, 3, 100) != HAL_OK)
+        {
+            return 0;
+        }
+
+        HAL_Delay(10);
+    }
+
+    return 1;
+}
+uint8_t AHT20_Read(float *temp, float *humi)
+{
+    uint8_t cmd[3] = {0xAC, 0x33, 0x00};
+
+    /* ?????? */
+    if (HAL_I2C_Master_Transmit(
+            &hi2c1, AHT20_ADDR, cmd, 3, 100) != HAL_OK)
+    {
+        return 0;
+    }
+
+    /* ?????? */
+    HAL_Delay(80);
+
+    /* ??????????? CRC ?? */
+    if (HAL_I2C_Master_Receive(
+            &hi2c1, AHT20_ADDR, aht20_data, 7, 100) != HAL_OK)
+    {
+        return 0;
+    }
+
+    /* Bit7 ? 1 ????????? */
+    if (aht20_data[0] & 0x80)
+    {
+        return 0;
+    }
+
+    /* ?? 20 ?????? */
+    uint32_t raw_humidity =
+        ((uint32_t)aht20_data[1] << 12) |
+        ((uint32_t)aht20_data[2] << 4) |
+        ((uint32_t)aht20_data[3] >> 4);
+
+    /* ?? 20 ?????? */
+    uint32_t raw_temperature =
+        (((uint32_t)aht20_data[3] & 0x0F) << 16) |
+        ((uint32_t)aht20_data[4] << 8) |
+        (uint32_t)aht20_data[5];
+
+    *humi = (raw_humidity * 100.0f) / 1048576.0f;
+    *temp = (raw_temperature * 200.0f) / 1048576.0f - 50.0f;
+
+    return 1;
 }
 /* USER CODE END 4 */
 

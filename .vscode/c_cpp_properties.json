@@ -14,6 +14,7 @@
                 "E:/develope/Keil5/Core/ARM/ARMCC/include",
                 "E:/develope/Keil5/Core/ARM/ARMCC/include/rw",
                 "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+                "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc",
                 "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc"
             ],
             "defines": [
