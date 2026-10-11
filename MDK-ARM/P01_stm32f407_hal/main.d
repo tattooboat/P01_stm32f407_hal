@@ -41,4 +41,6 @@ p01_stm32f407_hal\main.o: ../Core/Inc/i2c.h
 p01_stm32f407_hal\main.o: ../Core/Inc/tim.h
 p01_stm32f407_hal\main.o: ../Core/Inc/usart.h
 p01_stm32f407_hal\main.o: ../Core/Inc/gpio.h
+p01_stm32f407_hal\main.o: .\Interface\Int_aht20.h
 p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\stdio.h
+p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h

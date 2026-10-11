@@ -30,6 +30,7 @@
 "p01_stm32f407_hal\stm32f4xx_hal_tim_ex.o"
 "p01_stm32f407_hal\stm32f4xx_hal_uart.o"
 "p01_stm32f407_hal\system_stm32f4xx.o"
+"p01_stm32f407_hal\int_aht20.o"
 --library_type=microlib --strict --scatter "P01_stm32f407_hal\P01_stm32f407_hal.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

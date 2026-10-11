@@ -8,6 +8,7 @@
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\STM32F4xx_HAL_Driver\\Inc\\Legacy",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\CMSIS\\Device\\ST\\STM32F4xx\\Include",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\CMSIS\\Include",
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\MDK-ARM\\Interface",
                 "E:\\develope\\Keil5\\Core\\ARM\\ARMCC\\include",
                 "E:\\develope\\Keil5\\Core\\ARM\\ARMCC\\include\\rw",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\MDK-ARM",

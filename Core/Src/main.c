@@ -26,8 +26,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "Int_aht20.h"
 #include <stdio.h>
-#include <stdint.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,26 +49,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile uint32_t timer_count = 0;
-uint32_t last_count = 0;
-char uart_buf[64];
 
-volatile uint8_t key_event = 0;
-uint32_t last_key_time = 0;
-
-#define AHT20_ADDR       (0x38 << 1)
-
-uint8_t aht20_data[7];
-float temperature;
-float humidity;
-uint8_t aht20_status;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-uint8_t AHT20_Init(void);
-uint8_t AHT20_Read(float *temp, float *humi);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -113,29 +101,30 @@ int main(void)
   
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-  /* PA0 �? EXTI 已由 CubeMX 配置 */
 
-  uint32_t adc_value;
-  float voltage;
-  char uart_buf[64];
-  int len;
+  AHT20_Status_t aht_status;
+  AHT20_Data_t aht_data;
 
-  if (AHT20_Init())
-{
-    const char msg[] = "AHT20 Init OK\r\n";
-    HAL_UART_Transmit(&huart1,
-                      (uint8_t *)msg,
-                      sizeof(msg) - 1,
-                      100);
-}
-else
-{
-    const char msg[] = "AHT20 Init FAIL\r\n";
-    HAL_UART_Transmit(&huart1,
-                      (uint8_t *)msg,
-                      sizeof(msg) - 1,
-                      100);
-}
+  aht_status = AHT20_Init();
+
+  if (aht_status == AHT20_OK)
+  {
+      const char *msg = "AHT20 Init OK\r\n";
+
+      HAL_UART_Transmit(&huart1,
+                        (uint8_t *)msg,
+                        strlen(msg),
+                        1000);
+  }
+  else
+  {
+      const char *msg = "AHT20 Init FAILED\r\n";
+
+      HAL_UART_Transmit(&huart1,
+                        (uint8_t *)msg,
+                        strlen(msg),
+                        1000);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -145,46 +134,35 @@ else
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if (AHT20_Read(&temperature, &humidity))
+      char msg[100];
+
+    if (AHT20_ReadData(&aht_data) == AHT20_OK)
     {
-        int32_t t100 = (int32_t)(temperature * 100.0f);
-        uint32_t h100 = (uint32_t)(humidity * 100.0f);
-
-        uint32_t t_abs = (t100 < 0) ?
-                        (uint32_t)(-t100) : (uint32_t)t100;
-
-        char uart_buf[80];
-
         int len = snprintf(
-            uart_buf,
-            sizeof(uart_buf),
-            "Temp=%s%lu.%02lu C, RH=%lu.%02lu%%\r\n",
-            (t100 < 0) ? "-" : "",
-            (unsigned long)(t_abs / 100),
-            (unsigned long)(t_abs % 100),
-            (unsigned long)(h100 / 100),
-            (unsigned long)(h100 % 100)
+            msg,
+            sizeof(msg),
+            "Temp: %.2f C, Humidity: %.2f %%RH\r\n",
+            (double)aht_data.temperature,
+            (double)aht_data.humidity
         );
 
-        if (len > 0 && len < (int)sizeof(uart_buf))
+        if (len > 0 && len < (int)sizeof(msg))
         {
-            HAL_UART_Transmit(
-                &huart1,
-                (uint8_t *)uart_buf,
-                (uint16_t)len,
-                100
-            );
+            HAL_UART_Transmit(&huart1,
+                              (uint8_t *)msg,
+                              (uint16_t)len,
+                              1000);
         }
     }
     else
     {
-        const char msg[] = "AHT20 Read FAIL\r\n";
-        HAL_UART_Transmit(&huart1,
-                          (uint8_t *)msg,
-                          sizeof(msg) - 1,
-                          100);
-    }
+        const char *err = "AHT20 Read Failed\r\n";
 
+        HAL_UART_Transmit(&huart1,
+                          (uint8_t *)err,
+                          strlen(err),
+                          1000);
+    }
     HAL_Delay(1000);
   }
   /* USER CODE END 3 */
@@ -236,96 +214,8 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-// 处理 TIM2 中断
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM2)
-    {
-        timer_count++;
-    }
-}
 
-// 处理 EXTI 中断
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    if (GPIO_Pin == GPIO_PIN_0)
-    {
-        key_event = 1;
-    }
-}
 
-uint8_t AHT20_Init(void)
-{
-    uint8_t status;
-    uint8_t cmd[3] = {0xBE, 0x08, 0x00};
-
-    HAL_Delay(40);
-
-    /* ????? */
-    if (HAL_I2C_Master_Receive(
-            &hi2c1, AHT20_ADDR, &status, 1, 100) != HAL_OK)
-    {
-        return 0;
-    }
-
-    /* Bit3 ? 0 ????????? */
-    if ((status & 0x08) == 0)
-    {
-        if (HAL_I2C_Master_Transmit(
-                &hi2c1, AHT20_ADDR, cmd, 3, 100) != HAL_OK)
-        {
-            return 0;
-        }
-
-        HAL_Delay(10);
-    }
-
-    return 1;
-}
-uint8_t AHT20_Read(float *temp, float *humi)
-{
-    uint8_t cmd[3] = {0xAC, 0x33, 0x00};
-
-    /* ?????? */
-    if (HAL_I2C_Master_Transmit(
-            &hi2c1, AHT20_ADDR, cmd, 3, 100) != HAL_OK)
-    {
-        return 0;
-    }
-
-    /* ?????? */
-    HAL_Delay(80);
-
-    /* ??????????? CRC ?? */
-    if (HAL_I2C_Master_Receive(
-            &hi2c1, AHT20_ADDR, aht20_data, 7, 100) != HAL_OK)
-    {
-        return 0;
-    }
-
-    /* Bit7 ? 1 ????????? */
-    if (aht20_data[0] & 0x80)
-    {
-        return 0;
-    }
-
-    /* ?? 20 ?????? */
-    uint32_t raw_humidity =
-        ((uint32_t)aht20_data[1] << 12) |
-        ((uint32_t)aht20_data[2] << 4) |
-        ((uint32_t)aht20_data[3] >> 4);
-
-    /* ?? 20 ?????? */
-    uint32_t raw_temperature =
-        (((uint32_t)aht20_data[3] & 0x0F) << 16) |
-        ((uint32_t)aht20_data[4] << 8) |
-        (uint32_t)aht20_data[5];
-
-    *humi = (raw_humidity * 100.0f) / 1048576.0f;
-    *temp = (raw_temperature * 200.0f) / 1048576.0f - 50.0f;
-
-    return 1;
-}
 /* USER CODE END 4 */
 
 /**
