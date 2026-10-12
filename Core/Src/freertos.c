@@ -30,7 +30,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "usart.h"
-
+#include "App_data.h"
+#include "adc.h"
+#include "Int_aht20.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,7 +42,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+//PD什么意思：Private define=私定义宏定义
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,6 +52,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
+osMessageQueueId_t SensorDataQueueHandle;//传感器数据队列句柄
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -66,6 +69,8 @@ const osThreadAttr_t defaultTask_attributes = {
 void LED_Task(void *argument);
 // Debug 任务
 void Debug_Task(void *argument);
+// Sensor 任务
+void Sensor_Task(void *argument);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -80,6 +85,28 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
+
+  const osMessageQueueAttr_t SensorDataQueue_attributes = {
+    .name = "SensorDataQueue"
+  };//传感器数据队列属性
+
+  SensorDataQueueHandle = osMessageQueueNew(
+      8,
+      sizeof(SensorData_t),
+      &SensorDataQueue_attributes
+  );;//创建传感器数据队列
+  if (SensorDataQueueHandle == NULL)
+  {
+      /* 队列创建失败，可在此设置错误标志 */
+  }
+
+  const osThreadAttr_t sensorTask_attributes = {
+      .name = "Sensor_Task",
+      .stack_size = 768 * 4,
+      .priority = (osPriority_t)osPriorityNormal
+  };
+
+
   const osThreadAttr_t ledTask_attributes = {
     .name = "LED_Task",
     .stack_size = 256 * 4,
@@ -88,13 +115,15 @@ void MX_FREERTOS_Init(void) {
 
   const osThreadAttr_t debugTask_attributes = {
       .name = "Debug_Task",
-      .stack_size = 512 * 4,
+      .stack_size = 768 * 4,
       .priority = (osPriority_t)osPriorityNormal
   };
 
 
   osThreadNew(LED_Task, NULL, &ledTask_attributes);
   osThreadNew(Debug_Task, NULL, &debugTask_attributes);
+  osThreadNew(Sensor_Task,NULL,&sensorTask_attributes);
+
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -147,33 +176,153 @@ void StartDefaultTask(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
- void LED_Task(void *argument)
+void LED_Task(void *argument)
+{
+  (void)argument;
+
+  for (;;)
   {
+      HAL_GPIO_TogglePin(LED_GPIO_Port,
+                          LED_Pin);
+
+      osDelay(500);
+  }
+}
+void Debug_Task(void *argument)
+{
+    SensorData_t data;
+    char msg[160];
+
     (void)argument;
 
     for (;;)
     {
-        HAL_GPIO_TogglePin(LED_GPIO_Port,
-                           LED_Pin);
+        /*
+         * 等待队列数据。
+         * osWaitForever 表示没有数据时阻塞等待，
+         * 而不是不断空转占用 CPU。
+         */
+        if (osMessageQueueGet(
+                SensorDataQueueHandle,
+                &data,
+                NULL,
+                osWaitForever) == osOK)
+        {
+            int len;
+
+            if (data.aht20_valid != 0U)//
+            {
+                len = snprintf(
+                    msg,
+                    sizeof(msg),
+                    "ADC=%lu V=%.3f T=%.2fC H=%.2f%%RH\r\n",
+                    (unsigned long)data.adc_raw,
+                    (double)data.adc_voltage,
+                    (double)data.temperature,
+                    (double)data.humidity
+                );
+            }
+            else
+            {
+                len = snprintf(
+                    msg,
+                    sizeof(msg),
+                    "ADC=%lu V=%.3f AHT20=ERROR\r\n",
+                    (unsigned long)data.adc_raw,
+                    (double)data.adc_voltage
+                );
+            }
+
+            if (len > 0 && len < (int)sizeof(msg))
+            {
+                HAL_UART_Transmit(
+                    &huart1,
+                    (uint8_t *)msg,
+                    (uint16_t)len,
+                    1000
+                );
+            }
+        }
+    }
+}
+
+static uint8_t ADC_ReadRaw(uint32_t *value)
+{
+    if (value == NULL)
+    {
+        return 1U;
+    }
+
+    /* 启动一次 ADC 转换 */
+    if (HAL_ADC_Start(&hadc1) != HAL_OK)
+    {
+        return 2U;
+    }
+
+    /* 等待转换完成，最多等待 100ms */
+    if (HAL_ADC_PollForConversion(&hadc1, 100) != HAL_OK)
+    {
+        HAL_ADC_Stop(&hadc1);
+        return 3U;
+    }
+
+    /* 读取 12 位 ADC 原始值 */
+    *value = HAL_ADC_GetValue(&hadc1);
+
+    HAL_ADC_Stop(&hadc1);
+
+    return 0U;
+}
+
+void Sensor_Task(void *argument)
+{
+    SensorData_t data;
+    AHT20_Data_t aht;
+
+    (void)argument;
+
+    for (;;)
+    {
+        data.adc_raw = 0;
+        data.adc_voltage = 0.0f;
+        data.temperature = 0.0f;
+        data.humidity = 0.0f;
+        data.aht20_valid = 0U;
+
+        /* 读取 PA0 对应的 ADC 通道 */
+        if (ADC_ReadRaw(&data.adc_raw) == 0U)
+        {
+            data.adc_voltage =
+                (float)data.adc_raw * 3.3f / 4095.0f;
+        }
+
+        /* 读取 AHT20 */
+        if (AHT20_ReadData(&aht) == AHT20_OK)
+        {
+            data.temperature = aht.temperature;
+            data.humidity = aht.humidity;
+            data.aht20_valid = 1U;
+        }
+
+        /*
+         * 这里使用 HAL_GetTick() 作为时间标记。
+         * 后续可按项目需要统一时间基准。
+         */
+        data.timestamp_ms = HAL_GetTick();
+
+        /*
+         * 队列满时，等待最多 10ms。
+         * 如果仍无法发送，就丢弃本次数据并继续下一轮。
+         */
+        (void)osMessageQueuePut(
+            SensorDataQueueHandle,
+            &data,
+            0U,
+            10U
+        );
 
         osDelay(500);
     }
-  }
-  void Debug_Task(void *argument)
-  {
-    (void)argument;
-
-    const char *msg = "FreeRTOS Debug Task Running\r\n";
-
-    for (;;)
-    {
-        HAL_UART_Transmit(&huart1,
-                         (uint8_t *)msg,
-                         strlen(msg),
-                         1000);
-
-        osDelay(1000);
-    }
-  }
+}
 /* USER CODE END Application */
 
