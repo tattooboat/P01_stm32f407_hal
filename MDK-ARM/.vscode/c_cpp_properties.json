@@ -9,11 +9,16 @@
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\CMSIS\\Device\\ST\\STM32F4xx\\Include",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\CMSIS\\Include",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\MDK-ARM\\Interface",
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Middlewares\\Third_Party\\FreeRTOS\\Source\\include",
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS_V2",
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\RVDS\\ARM_CM4F",
                 "E:\\develope\\Keil5\\Core\\ARM\\ARMCC\\include",
                 "E:\\develope\\Keil5\\Core\\ARM\\ARMCC\\include\\rw",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\MDK-ARM",
                 "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Core\\Src",
-                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\STM32F4xx_HAL_Driver\\Src"
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Drivers\\STM32F4xx_HAL_Driver\\Src",
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Middlewares\\Third_Party\\FreeRTOS\\Source",
+                "e:\\code\\2026stm32\\Vehicle_CAN\\P01_stm32f407_hal\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\MemMang"
             ],
             "defines": [
                 "USE_HAL_DRIVER",

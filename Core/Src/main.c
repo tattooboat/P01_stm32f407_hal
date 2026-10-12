@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "adc.h"
 #include "i2c.h"
 #include "tim.h"
@@ -54,6 +55,7 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -98,34 +100,42 @@ int main(void)
   MX_ADC1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  
-  HAL_TIM_Base_Start_IT(&htim2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 
-  AHT20_Status_t aht_status;
-  AHT20_Data_t aht_data;
+  // AHT20_Status_t aht_status;
+  // AHT20_Data_t aht_data;
 
-  aht_status = AHT20_Init();
+  // aht_status = AHT20_Init();
 
-  if (aht_status == AHT20_OK)
-  {
-      const char *msg = "AHT20 Init OK\r\n";
+  // if (aht_status == AHT20_OK)
+  // {
+  //     const char *msg = "AHT20 Init OK\r\n";
 
-      HAL_UART_Transmit(&huart1,
-                        (uint8_t *)msg,
-                        strlen(msg),
-                        1000);
-  }
-  else
-  {
-      const char *msg = "AHT20 Init FAILED\r\n";
+  //     HAL_UART_Transmit(&huart1,
+  //                       (uint8_t *)msg,
+  //                       strlen(msg),
+  //                       1000);
+  // }
+  // else
+  // {
+  //     const char *msg = "AHT20 Init FAILED\r\n";
 
-      HAL_UART_Transmit(&huart1,
-                        (uint8_t *)msg,
-                        strlen(msg),
-                        1000);
-  }
+  //     HAL_UART_Transmit(&huart1,
+  //                       (uint8_t *)msg,
+  //                       strlen(msg),
+  //                       1000);
+  // }
   /* USER CODE END 2 */
+
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -134,37 +144,37 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-      char msg[100];
+  //     char msg[100];
 
-    if (AHT20_ReadData(&aht_data) == AHT20_OK)
-    {
-        int len = snprintf(
-            msg,
-            sizeof(msg),
-            "Temp: %.2f C, Humidity: %.2f %%RH\r\n",
-            (double)aht_data.temperature,
-            (double)aht_data.humidity
-        );
+  //   if (AHT20_ReadData(&aht_data) == AHT20_OK)
+  //   {
+  //       int len = snprintf(
+  //           msg,
+  //           sizeof(msg),
+  //           "Temp: %.2f C, Humidity: %.2f %%RH\r\n",
+  //           (double)aht_data.temperature,
+  //           (double)aht_data.humidity
+  //       );
 
-        if (len > 0 && len < (int)sizeof(msg))
-        {
-            HAL_UART_Transmit(&huart1,
-                              (uint8_t *)msg,
-                              (uint16_t)len,
-                              1000);
-        }
-    }
-    else
-    {
-        const char *err = "AHT20 Read Failed\r\n";
+  //       if (len > 0 && len < (int)sizeof(msg))
+  //       {
+  //           HAL_UART_Transmit(&huart1,
+  //                             (uint8_t *)msg,
+  //                             (uint16_t)len,
+  //                             1000);
+  //       }
+  //   }
+  //   else
+  //   {
+  //       const char *err = "AHT20 Read Failed\r\n";
 
-        HAL_UART_Transmit(&huart1,
-                          (uint8_t *)err,
-                          strlen(err),
-                          1000);
-    }
-    HAL_Delay(1000);
-  }
+  //       HAL_UART_Transmit(&huart1,
+  //                         (uint8_t *)err,
+  //                         strlen(err),
+  //                         1000);
+  //   }
+  //   HAL_Delay(1000);
+ }
   /* USER CODE END 3 */
 }
 
