@@ -53,7 +53,16 @@
 
 /* USER CODE BEGIN PV */
 uint8_t can_test_data[8] =
-    {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+{
+    0x01,  /* 命令：PING */
+    0x01,  /* 序号：1 */
+    0x01,  /* 目标设备：1 */
+    0x00,  /* 参数高字节 */
+    0x00,  /* 参数低字节 */
+    0x00,  /* 状态 */
+    0x00,  /* 保留 */
+    0x03   /* 校验和：01+01+01=03 */
+};
 
 volatile HAL_StatusTypeDef can_tx_status = HAL_ERROR;
 volatile uint32_t can_tx_count = 0;

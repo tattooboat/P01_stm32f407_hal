@@ -38,5 +38,6 @@ p01_stm32f407_hal\int_can.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_p
 p01_stm32f407_hal\int_can.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 p01_stm32f407_hal\int_can.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
 p01_stm32f407_hal\int_can.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
+p01_stm32f407_hal\int_can.o: ./Application/App_can_protocol.h
 p01_stm32f407_hal\int_can.o: ../Core/Inc/can.h
 p01_stm32f407_hal\int_can.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h

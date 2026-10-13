@@ -58,3 +58,4 @@ p01_stm32f407_hal\main.o: ./Interface/Int_aht20.h
 p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\stdio.h
 p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h
 p01_stm32f407_hal\main.o: ./Interface/Int_can.h
+p01_stm32f407_hal\main.o: ./Application/App_can_protocol.h

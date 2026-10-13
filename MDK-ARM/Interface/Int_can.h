@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include <stdint.h>
+#include "App_can_protocol.h"
 
 typedef struct
 {

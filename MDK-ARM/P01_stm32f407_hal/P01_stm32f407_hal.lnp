@@ -48,6 +48,7 @@
 "p01_stm32f407_hal\cmsis_os2.o"
 "p01_stm32f407_hal\heap_4.o"
 "p01_stm32f407_hal\port.o"
+"p01_stm32f407_hal\app_can_protocol.o"
 "p01_stm32f407_hal\app_data.o"
 --library_type=microlib --strict --scatter "P01_stm32f407_hal\P01_stm32f407_hal.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols

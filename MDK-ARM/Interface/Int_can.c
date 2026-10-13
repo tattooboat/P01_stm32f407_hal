@@ -167,7 +167,16 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         {
             break;
         }
-
+        CAN_Protocol_OnFrame(
+            (rx_header.IDE == CAN_ID_STD)
+                ? rx_header.StdId
+                : rx_header.ExtId,
+            (rx_header.IDE == CAN_ID_EXT) ? 1U : 0U,
+            (rx_header.RTR == CAN_RTR_REMOTE) ? 1U : 0U,
+            (uint8_t)rx_header.DLC,
+            rx_data
+        );
+        
         g_can_last_id = (rx_header.IDE == CAN_ID_STD)
                       ? rx_header.StdId
                       : rx_header.ExtId;
