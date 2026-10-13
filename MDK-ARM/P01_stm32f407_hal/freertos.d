@@ -35,6 +35,7 @@ p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_
 p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_adc.h
 p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_adc.h
 p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_adc_ex.h
+p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h
 p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h
 p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h
 p01_stm32f407_hal\freertos.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h
@@ -50,6 +51,6 @@ p01_stm32f407_hal\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_R
 p01_stm32f407_hal\freertos.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\stdio.h
 p01_stm32f407_hal\freertos.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h
 p01_stm32f407_hal\freertos.o: ../Core/Inc/usart.h
-p01_stm32f407_hal\freertos.o: .\Application\App_data.h
+p01_stm32f407_hal\freertos.o: ./Application/App_data.h
 p01_stm32f407_hal\freertos.o: ../Core/Inc/adc.h
 p01_stm32f407_hal\freertos.o: ./Interface/Int_aht20.h

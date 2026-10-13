@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "can.h"
 #include "i2c.h"
 #include "tim.h"
 #include "usart.h"
@@ -30,6 +31,7 @@
 #include "Int_aht20.h"
 #include <stdio.h>
 #include <string.h>
+#include "Int_can.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +52,16 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint8_t can_test_data[8] =
+    {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
 
+volatile HAL_StatusTypeDef can_tx_status = HAL_ERROR;
+volatile uint32_t can_tx_count = 0;
+
+volatile uint32_t f407_rx_count = 0;
+volatile uint32_t f407_last_id = 0;
+volatile uint8_t  f407_last_dlc = 0;
+volatile uint8_t  f407_last_data[8] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,7 +93,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  
+  
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -99,8 +111,20 @@ int main(void)
   MX_TIM3_Init();
   MX_ADC1_Init();
   MX_I2C1_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
 
+  if (INT_CAN_Start() != HAL_OK)
+  {
+      Error_Handler();
+  }
+
+  HAL_Delay(100);
+
+  can_tx_status =
+      INT_CAN_SendStd(0x123, can_test_data, 8, 100);
+
+  can_tx_count++;
   // AHT20_Status_t aht_status;
   // AHT20_Data_t aht_data;
 
@@ -124,6 +148,7 @@ int main(void)
   //                       strlen(msg),
   //                       1000);
   // }
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -224,7 +249,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 
 /* USER CODE END 4 */
 

@@ -26,6 +26,7 @@ p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cort
 p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_adc.h
 p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_ll_adc.h
 p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_adc_ex.h
+p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_can.h
 p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h
 p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h
 p01_stm32f407_hal\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h
@@ -48,6 +49,7 @@ p01_stm32f407_hal\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/tas
 p01_stm32f407_hal\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/list.h
 p01_stm32f407_hal\main.o: ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h
 p01_stm32f407_hal\main.o: ../Core/Inc/adc.h
+p01_stm32f407_hal\main.o: ../Core/Inc/can.h
 p01_stm32f407_hal\main.o: ../Core/Inc/i2c.h
 p01_stm32f407_hal\main.o: ../Core/Inc/tim.h
 p01_stm32f407_hal\main.o: ../Core/Inc/usart.h
@@ -55,3 +57,4 @@ p01_stm32f407_hal\main.o: ../Core/Inc/gpio.h
 p01_stm32f407_hal\main.o: ./Interface/Int_aht20.h
 p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\stdio.h
 p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h
+p01_stm32f407_hal\main.o: ./Interface/Int_can.h
