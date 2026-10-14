@@ -38,6 +38,7 @@
 "p01_stm32f407_hal\int_can.o"
 "p01_stm32f407_hal\int_led.o"
 "p01_stm32f407_hal\int_usart.o"
+"p01_stm32f407_hal\int_motor.o"
 "p01_stm32f407_hal\croutine.o"
 "p01_stm32f407_hal\event_groups.o"
 "p01_stm32f407_hal\list.o"

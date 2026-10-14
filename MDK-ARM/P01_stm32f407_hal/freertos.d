@@ -54,3 +54,5 @@ p01_stm32f407_hal\freertos.o: ../Core/Inc/usart.h
 p01_stm32f407_hal\freertos.o: ./Application/App_data.h
 p01_stm32f407_hal\freertos.o: ../Core/Inc/adc.h
 p01_stm32f407_hal\freertos.o: ./Interface/Int_aht20.h
+p01_stm32f407_hal\freertos.o: ../Core/Inc/tim.h
+p01_stm32f407_hal\freertos.o: ./Interface/Int_motor.h

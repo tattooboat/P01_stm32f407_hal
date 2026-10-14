@@ -32,6 +32,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "Int_can.h"
+#include "Int_motor.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,11 +57,11 @@
 uint8_t can_test_data[8] =
 {
     0x01,  /* 命令：PING */
-    0x01,  /* 序号：1 */
-    0x01,  /* 目标设备：1 */
-    0x00,  /* 参数高字节 */
-    0x00,  /* 参数低字节 */
-    0x00,  /* 状态 */
+    0x01,  /* 庝坷�?1 */
+    0x01,  /* 目标设备�?1 */
+    0x00,  /* 坂数高字�? */
+    0x00,  /* 坂数低字�? */
+    0x00,  /* 状�?? */
     0x00,  /* 保留 */
     0x03   /* 校验和：01+01+01=03 */
 };
@@ -122,7 +124,11 @@ int main(void)
   MX_I2C1_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-
+  if (Int_Motor_Init() != HAL_OK)
+  {
+      Error_Handler();
+  }
+  
   if (INT_CAN_Start() != HAL_OK)
   {
       Error_Handler();
@@ -178,37 +184,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  //     char msg[100];
-
-  //   if (AHT20_ReadData(&aht_data) == AHT20_OK)
-  //   {
-  //       int len = snprintf(
-  //           msg,
-  //           sizeof(msg),
-  //           "Temp: %.2f C, Humidity: %.2f %%RH\r\n",
-  //           (double)aht_data.temperature,
-  //           (double)aht_data.humidity
-  //       );
-
-  //       if (len > 0 && len < (int)sizeof(msg))
-  //       {
-  //           HAL_UART_Transmit(&huart1,
-  //                             (uint8_t *)msg,
-  //                             (uint16_t)len,
-  //                             1000);
-  //       }
-  //   }
-  //   else
-  //   {
-  //       const char *err = "AHT20 Read Failed\r\n";
-
-  //       HAL_UART_Transmit(&huart1,
-  //                         (uint8_t *)err,
-  //                         strlen(err),
-  //                         1000);
-  //   }
-  //   HAL_Delay(1000);
- }
+ 
+  }
   /* USER CODE END 3 */
 }
 

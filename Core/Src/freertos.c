@@ -33,6 +33,9 @@
 #include "App_data.h"
 #include "adc.h"
 #include "Int_aht20.h"
+#include "tim.h"
+#include "Int_motor.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,7 +45,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-//PD�?么意思：Private define=私定义宏定义
+//PD�?么愝思：Private define=秝定义宝定义
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +55,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-osMessageQueueId_t SensorDataQueueHandle;//传感器数据队列句�?
+osMessageQueueId_t SensorDataQueueHandle;//传感器数杮队列坥�?
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -71,7 +74,8 @@ void LED_Task(void *argument);
 void Debug_Task(void *argument);
 // Sensor 任务
 void Sensor_Task(void *argument);
-
+// PWM 任务
+void PWM_Test_Task(void *argument);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -88,16 +92,16 @@ void MX_FREERTOS_Init(void) {
 
   const osMessageQueueAttr_t SensorDataQueue_attributes = {
     .name = "SensorDataQueue"
-  };//传感器数据队列属�?
+  };//传感器数杮队列属�?
 
   SensorDataQueueHandle = osMessageQueueNew(
       8,
       sizeof(SensorData_t),
       &SensorDataQueue_attributes
-  );;//创建传感器数据队�?
+  );;//创建传感器数杮队�?
   if (SensorDataQueueHandle == NULL)
   {
-      /* 队列创建失败，可在此设置错误标志 */
+      /* 队列创建失败，坯在此设置错误标志 */
   }
 
   const osThreadAttr_t sensorTask_attributes = {
@@ -119,7 +123,12 @@ void MX_FREERTOS_Init(void) {
       .priority = (osPriority_t)osPriorityNormal
   };
 
-
+  const osThreadAttr_t pwmTestTask_attributes = {
+        .name = "pwmTest",
+        .stack_size = 512 * 4,
+        .priority = (osPriority_t)osPriorityLow,
+    };
+  osThreadNew(PWM_Test_Task, NULL, &pwmTestTask_attributes);
   osThreadNew(LED_Task, NULL, &ledTask_attributes);
   osThreadNew(Debug_Task, NULL, &debugTask_attributes);
   osThreadNew(Sensor_Task,NULL,&sensorTask_attributes);
@@ -198,9 +207,9 @@ void Debug_Task(void *argument)
     for (;;)
     {
         /*
-         * 等待队列数据�?
-         * osWaitForever 表示没有数据时阻塞等待，
-         * 而不是不断空转占�? CPU�?
+         * 等待队列数杮�?
+         * osWaitForever 表示没有数杮时阻塞等待，
+         * 而丝是丝断空转坠�? CPU�?
          */
         if (osMessageQueueGet(
                 SensorDataQueueHandle,
@@ -253,20 +262,20 @@ static uint8_t ADC_ReadRaw(uint32_t *value)
         return 1U;
     }
 
-    /* 启动�?�? ADC 转换 */
+    /* 坯动�?�? ADC 转杢 */
     if (HAL_ADC_Start(&hadc1) != HAL_OK)
     {
         return 2U;
     }
 
-    /* 等待转换完成，最多等�? 100ms */
+    /* 等待转杢完戝，最多等�? 100ms */
     if (HAL_ADC_PollForConversion(&hadc1, 100) != HAL_OK)
     {
         HAL_ADC_Stop(&hadc1);
         return 3U;
     }
 
-    /* 读取 12 �? ADC 原始�? */
+    /* 读坖 12 �? ADC 原始�? */
     *value = HAL_ADC_GetValue(&hadc1);
 
     HAL_ADC_Stop(&hadc1);
@@ -289,14 +298,14 @@ void Sensor_Task(void *argument)
         data.humidity = 0.0f;
         data.aht20_valid = 0U;
 
-        /* 读取 PA0 对应�? ADC 通道 */
+        /* 读坖 PA0 对应�? ADC 通靓 */
         if (ADC_ReadRaw(&data.adc_raw) == 0U)
         {
             data.adc_voltage =
                 (float)data.adc_raw * 3.3f / 4095.0f;
         }
 
-        /* 读取 AHT20 */
+        /* 读坖 AHT20 */
         if (AHT20_ReadData(&aht) == AHT20_OK)
         {
             data.temperature = aht.temperature;
@@ -306,13 +315,13 @@ void Sensor_Task(void *argument)
 
         /*
          * 这里使用 HAL_GetTick() 作为时间标记�?
-         * 后续可按项目�?要统�?时间基准�?
+         * 坎续坯按项目�?覝统�?时间基准�?
          */
         data.timestamp_ms = HAL_GetTick();
 
         /*
          * 队列满时，等待最�? 10ms�?
-         * 如果仍无法发送，就丢弃本次数据并继续下一轮�??
+         * 如果仝无法坑逝，就丢弃本次数杮并继续下一轮�??
          */
         (void)osMessageQueuePut(
             SensorDataQueueHandle,
@@ -322,6 +331,33 @@ void Sensor_Task(void *argument)
         );
 
         osDelay(500);
+    }
+}
+
+static void PWM_Test_Task(void *argument)
+{
+       /* ??????? */
+    Int_Motor_Init();
+
+    while (1)
+    {
+        Int_Motor_SetSpeed(200);  // ????20%???
+        osDelay(2000);
+
+        Int_Motor_SetSpeed(500);  // ????50%???
+        osDelay(2000);
+
+        Int_Motor_SetSpeed(800);  // ????80%???
+        osDelay(2000);
+
+        Int_Motor_Stop();         // ??
+        osDelay(2000);
+
+        Int_Motor_SetSpeed(-300); // ????30%???
+        osDelay(2000);
+
+        Int_Motor_Stop();         // ??
+        osDelay(2000);
     }
 }
 /* USER CODE END Application */

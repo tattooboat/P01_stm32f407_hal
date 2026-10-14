@@ -59,3 +59,4 @@ p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\stdio.
 p01_stm32f407_hal\main.o: E:\develope\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h
 p01_stm32f407_hal\main.o: ./Interface/Int_can.h
 p01_stm32f407_hal\main.o: ./Application/App_can_protocol.h
+p01_stm32f407_hal\main.o: ./Interface/Int_motor.h
