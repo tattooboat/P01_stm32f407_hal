@@ -1,3 +1,4 @@
-Load "P01_stm32f407_hal\\P01_stm32f407_hal.axf" 
-Erase Done.Programming Done.Verify OK.Application running ...
-Flash Load finished at 15:38:45
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'E:\develope\Keil5\Core\ARM\ARMCC\Bin'
+Build target 'P01_stm32f407_hal'
+"P01_stm32f407_hal\P01_stm32f407_hal.axf" - 0 Error(s), 0 Warning(s).
+Build Time Elapsed:  00:00:00

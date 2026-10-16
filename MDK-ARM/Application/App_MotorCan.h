@@ -14,3 +14,4 @@ int16_t App_MotorCan_GetTargetSpeed(void);
 uint32_t App_MotorCan_GetLastRxTick(void);
 
 #endif
+
