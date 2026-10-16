@@ -35,6 +35,8 @@
 #include "Int_aht20.h"
 #include "tim.h"
 #include "Int_motor.h"
+#include "App_MotorControl.h"
+#include "App_MotorCan.h"
 
 /* USER CODE END Includes */
 
@@ -45,7 +47,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-//PD�?么愝思：Private define=秝定义宝定义
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -55,7 +58,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-osMessageQueueId_t SensorDataQueueHandle;//传感器数杮队列坥�?
+osMessageQueueId_t SensorDataQueueHandle;//传感器数杮队列坥�?
 
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
@@ -74,8 +77,10 @@ void LED_Task(void *argument);
 void Debug_Task(void *argument);
 // Sensor 任务
 void Sensor_Task(void *argument);
-// PWM 任务
-void PWM_Test_Task(void *argument);
+// PWM 任务（已停用）
+// void PWM_Test_Task(void *argument);
+// CAN 电机控制任务
+void App_MotorCan_ControlTask(void *argument);
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
@@ -92,13 +97,13 @@ void MX_FREERTOS_Init(void) {
 
   const osMessageQueueAttr_t SensorDataQueue_attributes = {
     .name = "SensorDataQueue"
-  };//传感器数杮队列属�?
+  };//传感器数杮队列属�?
 
   SensorDataQueueHandle = osMessageQueueNew(
       8,
       sizeof(SensorData_t),
       &SensorDataQueue_attributes
-  );;//创建传感器数杮队�?
+  );;//创建传感器数杮队�?
   if (SensorDataQueueHandle == NULL)
   {
       /* 队列创建失败，坯在此设置错误标志 */
@@ -123,12 +128,13 @@ void MX_FREERTOS_Init(void) {
       .priority = (osPriority_t)osPriorityNormal
   };
 
-  const osThreadAttr_t pwmTestTask_attributes = {
-        .name = "pwmTest",
-        .stack_size = 512 * 4,
-        .priority = (osPriority_t)osPriorityLow,
+  /* PWM_Test_Task 已停用：改为由 Motor_CAN_Control_Task 独占电机控制 */
+  const osThreadAttr_t motorCanTask_attributes = {
+        .name = "Motor_CAN",
+        .stack_size = 1024 * 4,
+        .priority = (osPriority_t)osPriorityHigh,
     };
-  osThreadNew(PWM_Test_Task, NULL, &pwmTestTask_attributes);
+  osThreadNew(App_MotorCan_ControlTask, NULL, &motorCanTask_attributes);
   osThreadNew(LED_Task, NULL, &ledTask_attributes);
   osThreadNew(Debug_Task, NULL, &debugTask_attributes);
   osThreadNew(Sensor_Task,NULL,&sensorTask_attributes);
@@ -207,9 +213,9 @@ void Debug_Task(void *argument)
     for (;;)
     {
         /*
-         * 等待队列数杮�?
+         * 等待队列数杮�?
          * osWaitForever 表示没有数杮时阻塞等待，
-         * 而丝是丝断空转坠�? CPU�?
+         * 而丝是丝断空转坠�? CPU�?
          */
         if (osMessageQueueGet(
                 SensorDataQueueHandle,
@@ -262,20 +268,20 @@ static uint8_t ADC_ReadRaw(uint32_t *value)
         return 1U;
     }
 
-    /* 坯动�?�? ADC 转杢 */
+    /* 坯动�?�? ADC 转杢 */
     if (HAL_ADC_Start(&hadc1) != HAL_OK)
     {
         return 2U;
     }
 
-    /* 等待转杢完戝，最多等�? 100ms */
+    /* 等待转杢完戝，最多等�? 100ms */
     if (HAL_ADC_PollForConversion(&hadc1, 100) != HAL_OK)
     {
         HAL_ADC_Stop(&hadc1);
         return 3U;
     }
 
-    /* 读坖 12 �? ADC 原始�? */
+    /* 读坖 12 �? ADC 原始�? */
     *value = HAL_ADC_GetValue(&hadc1);
 
     HAL_ADC_Stop(&hadc1);
@@ -298,7 +304,7 @@ void Sensor_Task(void *argument)
         data.humidity = 0.0f;
         data.aht20_valid = 0U;
 
-        /* 读坖 PA0 对应�? ADC 通靓 */
+        /* 读坖 PA0 对应�? ADC 通靓 */
         if (ADC_ReadRaw(&data.adc_raw) == 0U)
         {
             data.adc_voltage =
@@ -314,14 +320,14 @@ void Sensor_Task(void *argument)
         }
 
         /*
-         * 这里使用 HAL_GetTick() 作为时间标记�?
-         * 坎续坯按项目�?覝统�?时间基准�?
+         * 这里使用 HAL_GetTick() 作为时间标记�?
+         * 坎续坯按项目�?覝统�?时间基准�?
          */
         data.timestamp_ms = HAL_GetTick();
 
         /*
-         * 队列满时，等待最�? 10ms�?
-         * 如果仝无法坑逝，就丢弃本次数杮并继续下一轮�??
+         * 队列满时，等待最�? 10ms�?
+         * 如果仝无法坑逝，就丢弃本次数杮并继续下一轮�??
          */
         (void)osMessageQueuePut(
             SensorDataQueueHandle,
@@ -334,31 +340,82 @@ void Sensor_Task(void *argument)
     }
 }
 
-static void PWM_Test_Task(void *argument)
+/* 电机 CAN 控制任务：唯一负责驱动电机，读取帧解析结果并输出 PWM */
+void App_MotorCan_ControlTask(void *argument)
 {
-       /* ??????? */
+    int16_t current_speed = 0;
+    int16_t target;
+    int16_t step = 50;
+    uint32_t last_rx_tick;
+    uint32_t print_cnt = 0;
+    char dbg_buf[96];
+
+    (void)argument;
+
     Int_Motor_Init();
 
-    while (1)
+    /* 初始没有有效控制帧，保持停止 */
+    Int_Motor_Stop();
+
+    for (;;)
     {
-        Int_Motor_SetSpeed(200);  // ????20%???
-        osDelay(2000);
+        uint32_t now = HAL_GetTick();
 
-        Int_Motor_SetSpeed(500);  // ????50%???
-        osDelay(2000);
+        last_rx_tick = App_MotorCan_GetLastRxTick();
 
-        Int_Motor_SetSpeed(800);  // ????80%???
-        osDelay(2000);
+        /* 500 ms 没有收到有效控制帧，目标归零 */
+        if (last_rx_tick == 0 ||
+            (uint32_t)(now - last_rx_tick) > 500)
+        {
+            target = 0;
+        }
+        else
+        {
+            target = App_MotorCan_GetTargetSpeed();
+        }
 
-        Int_Motor_Stop();         // ??
-        osDelay(2000);
+        /*
+         * 每次只调整一步，避免在渐变期间
+         * 长时间阻塞任务，影响超时检查。
+         */
+        if (current_speed < target)
+        {
+            current_speed += step;
+            if (current_speed > target)
+                current_speed = target;
+        }
+        else if (current_speed > target)
+        {
+            current_speed -= step;
+            if (current_speed < target)
+                current_speed = target;
+        }
 
-        Int_Motor_SetSpeed(-300); // ????30%???
-        osDelay(2000);
+        Int_Motor_SetSpeed(current_speed);
 
-        Int_Motor_Stop();         // ??
-        osDelay(2000);
+        /* 每 10 次循环（约 500ms）打印一次调试信息 */
+        if ((print_cnt++ % 10) == 0)
+        {
+            int n = snprintf(
+                dbg_buf,
+                sizeof(dbg_buf),
+                "MOTOR target=%d cur=%d rx_tick=%lu\r\n",
+                (int)target,
+                (int)current_speed,
+                (unsigned long)last_rx_tick
+            );
+            if (n > 0 && n < (int)sizeof(dbg_buf))
+            {
+                HAL_UART_Transmit(
+                    &huart1,
+                    (uint8_t *)dbg_buf,
+                    (uint16_t)n,
+                    50
+                );
+            }
+        }
+
+        osDelay(50);
     }
 }
 /* USER CODE END Application */
-

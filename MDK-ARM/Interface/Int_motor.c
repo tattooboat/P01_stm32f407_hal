@@ -107,3 +107,4 @@ void Int_Motor_SetSpeed(int16_t speed)
                           MOTOR_PWM_CHANNEL,
                           duty);
 }
+

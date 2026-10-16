@@ -1,9 +1,15 @@
 
 #include "int_can.h"
 #include "can.h"
+#include "App_MotorCan.h"
 #include <string.h>
 
 extern CAN_HandleTypeDef hcan1;
+
+/* 电机 CAN 控制帧 ID，与 App_MotorCan 中保持一致 */
+#ifndef MOTOR_CAN_ID
+#define MOTOR_CAN_ID  0x301
+#endif
 
 /*
  * 启动 CAN1，配置过滤器接收全部标准帧和扩展帧，
@@ -29,10 +35,12 @@ HAL_StatusTypeDef INT_CAN_Start(void)
      */
     filter.SlaveStartFilterBank = 14;
 
-    if (HAL_CAN_ConfigFilter(&hcan1, &filter) != HAL_OK)
-    {
-        return HAL_ERROR;
-    }
+    // if (HAL_CAN_ConfigFilter(&hcan1, &filter) != HAL_OK)
+    // {
+    //     return HAL_ERROR;
+    // }
+    HAL_StatusTypeDef status = HAL_CAN_ConfigFilter(&hcan1, &filter);
+    if (status != HAL_OK) return status;   // 把真实的 HAL_TIMEOUT 透出来   
 
     if (HAL_CAN_Start(&hcan1) != HAL_OK)
     {
@@ -176,6 +184,18 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             (uint8_t)rx_header.DLC,
             rx_data
         );
+
+        /* 电机控制帧（0x301）由 App_MotorCan 处理 */
+        if ((rx_header.IDE == CAN_ID_STD) &&
+            (rx_header.StdId == MOTOR_CAN_ID) &&
+            (rx_header.RTR == CAN_RTR_DATA))
+        {
+            App_MotorCan_OnRx(
+                rx_header.StdId,
+                rx_data,
+                (uint8_t)rx_header.DLC
+            );
+        }
         
         g_can_last_id = (rx_header.IDE == CAN_ID_STD)
                       ? rx_header.StdId

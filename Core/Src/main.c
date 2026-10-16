@@ -56,14 +56,14 @@
 /* USER CODE BEGIN PV */
 uint8_t can_test_data[8] =
 {
-    0x01,  /* 命令：PING */
-    0x01,  /* 庝坷�?1 */
-    0x01,  /* 目标设备�?1 */
-    0x00,  /* 坂数高字�? */
-    0x00,  /* 坂数低字�? */
-    0x00,  /* 状�?? */
-    0x00,  /* 保留 */
-    0x03   /* 校验和：01+01+01=03 */
+    0x01,  /* ???PING */
+    0x01,  /* ????1 */
+    0x01,  /* ??????1 */
+    0x00,  /* ?????? */
+    0x00,  /* ?????? */
+    0x00,  /* ???? */
+    0x00,  /* ?? */
+    0x03   /* ????01+01+01=03 */
 };
 
 volatile HAL_StatusTypeDef can_tx_status = HAL_ERROR;
@@ -124,11 +124,6 @@ int main(void)
   MX_I2C1_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-  if (Int_Motor_Init() != HAL_OK)
-  {
-      Error_Handler();
-  }
-  
   if (INT_CAN_Start() != HAL_OK)
   {
       Error_Handler();
@@ -136,8 +131,8 @@ int main(void)
 
   HAL_Delay(100);
 
-  can_tx_status =
-      INT_CAN_SendStd(0x123, can_test_data, 8, 100);
+  // can_tx_status =
+  //     INT_CAN_SendStd(0x123, can_test_data, 8, 100);
 
   can_tx_count++;
   // AHT20_Status_t aht_status;
